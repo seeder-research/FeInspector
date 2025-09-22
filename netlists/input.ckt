@@ -1,0 +1,47 @@
+*  Generated for: HSPICE
+*  Generated on: Jun  6 23:24:55 2024
+*  Design library name: fe22fdx
+*  Design cell name: fefet_dcread
+*  Design view name: schematic
+.include '/home/grad/wangjianze/gf22fdx/fe22fdx/bsimimg/model/model_bsim.inc'
+
+*  Library name: fe22fdx
+*  Cell name: fefet_dcread
+*  View name: schematic
+xi0 vg vmos qfe pfe a00 a04 a08 a12 a16 a20 fecap6_debug TFE=MC_TFE LFE=20e-9 WFE=80e-9 ETA_MIN=0 ETA_MAX=2 PR=MC_PR TAU0=3e-9 Ea=MC_Ea ALPHA=4.11 BETA=2.07 V_OFFSET=-80e-3 EPSFER=24 a=12.1 b=990e-3 p=691e-3 q=633e-3 bstep=1e-9 deta=430e-3 Bet=2.08171 ap00=0 ap04=58.716e-6 ap08=603.053e-3 ap12=362.53e-3 ap16=1.011929076e-3 ap20=1e-3
+xi1 vd vmos 0 0 q bsimimg L=20e-9 W=80e-9 NF=1 AS=6.72e-15 AD=6.72e-15 PS=328e-9 PD=328e-9 NRS=0 NRD=0 XL=0 DTEMP=0 DELVTRAND=290e-3 U0MULT=1
+g1 vmos vg VCCS q 0 1.0
+g0 vg vmos VCCS qfe 0 1.0
+v1 vd 0 PWL ( 0 0 '2 * tidle + tp' 0 '(2 * tidle + tp) + 1e-12' 50.00m '((2 * tidle + tp) + tsweep) + 1e-12' 50.00m '((2 * tidle + tp) + tsweep) + 2e-12' 0 '(3 * tidle + tp) + tsweep' 0 '((3 * tidle + tp) + tsweep) + 1e-12' 'vsen' '(((3 * tidle + tp) + tsweep) + tread) + 1e-12' 'vsen' '(((3 * tidle + tp) + tsweep) + tread) + 2e-12' 0 '((5 * tidle + 2 * tp) + tsweep) + tread' 0 '(((5 * tidle + 2 * tp) + tsweep) + tread) + 1e-12' 50.00m '(((5 * tidle + 2 * tp) + 2 * tsweep) + tread) + 1e-12' 50.00m '(((5 * tidle + 2 * tp) + 2 * tsweep) + tread) + 2e-12' 0 '((6 * tidle + 2 * tp) + 2 * tsweep) + tread' 0 '(((6 * tidle + 2 * tp) + 2 * tsweep) + tread) + 1e-12' 'vsen' '(((6 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread) + 1e-12' 'vsen' '(((6 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread) + 2e-12' 0 '((7 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread' 0 '(((7 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread) + 1e-12' 50.00m '(((7 * tidle + 2 * tp) + 3 * tsweep) + 2 * tread) + 1e-12' 50.00m '(((7 * tidle + 2 * tp) + 3 * tsweep)
++ + 2 * tread) + 2e-12' 0  '(((7*tidle+2*tp)+3*tsweep)+2*tread)+2e-12+0' 0 r=0 td=0 )
+v0 vg 0 PWL ( 0 0 'tidle' 0 'tidle + 1e-12' 'vp' '(tidle + tp) + 1e-12' 'vp' '(tidle + tp) + 2e-12' 0 '2 * tidle + tp' 0 '(2 * tidle + tp) + 1e-12' -1 '((2 * tidle + tp) + tsweep) + 1e-12' 1 '((2 * tidle + tp) + tsweep) + 2e-12' 0 '(3 * tidle + tp) + tsweep' 0 '((3 * tidle + tp) + tsweep) + 1e-12' 'vread' '(((3 * tidle + tp) + tsweep) + tread) + 1e-12' 'vread' '(((3 * tidle + tp) + tsweep) + tread) + 2e-12' 0 '((4 * tidle + tp) + tsweep) + tread' 0 '(((4 * tidle + tp) + tsweep) + tread) + 1e-12' '-vp' '(((4 * tidle + 2 * tp) + tsweep) + tread) + 1e-12' '-vp' '(((4 * tidle + 2 * tp) + tsweep) + tread) + 2e-12' 0 '((5 * tidle + 2 * tp) + tsweep) + tread' 0 '(((5 * tidle + 2 * tp) + tsweep) + tread) + 1e-12' -1 '(((5 * tidle + 2 * tp) + 2 * tsweep) + tread) + 1e-12' 1 '(((5 * tidle + 2 * tp) + 2 * tsweep) + tread) + 2e-12' 0 '((6 * tidle + 2 * tp) + 2 * tsweep) + tread' 0 '(((6 * tidle + 2 * tp) + 2 * tsweep) + tread) + 1e-12' 'vread' '(((6 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread) + 1e-12' 'vread' '(((6 *
++ tidle + 2 * tp) + 2 * tsweep) + 2 * tread) + 2e-12' 0 '((7 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread' 0 '(((7 * tidle + 2 * tp) + 2 * tsweep) + 2 * tread) + 1e-12' -1 '(((7 * tidle + 2 * tp) + 3 * tsweep) + 2 * tread) + 1e-12' 1 '(((7 * tidle + 2 * tp) + 3 * tsweep) + 2 * tread) + 2e-12' 0  '(((7*tidle+2*tp)+3*tsweep)+2*tread)+2e-12+0' 0 r=0 td=0 )
+.param
++   vsen=200e-3
++   vread=1
++   vp=MC_vp 
++   tsweep=50e-9
++   tread=50e-9
++   tp=MC_tp 
++   tidle=50e-9
++   wireopt=120
++   v_w=80e-9
++   v_l=20e-9
+.temp 27.0
+.option INGOLD=1
+.option GEN_CUR_POL=ON
+.option WARN_SEP=1
+.option VECBUS=1 LIS_NEW=1 CONVERGE=100 RUNLVL=6 
+.tran 1e-9 '(((7.0*tidle+2.0*tp)+3.0*tsweep)+2.0*tread)+2e-12' start=0.0
+.option hier_delim=1
+.measure TRAN vthl   find  v(vg) when  i(xi1.d)='v_w/v_l*2e-8' RISE=1 
++	td='2*tidle+tp+0.5e-9'
+.measure TRAN vthh   find  v(vg) when  i(xi1.d)='v_w/v_l*2e-8' RISE=1 
++	td='5*tidle+2*tp+tsweep+tread+1e-9'
+.measure TRAN vthhd   find  v(vg) when  i(xi1.d)='v_w/v_l*2e-8' RISE=1 
++	td='7*tidle+2*tp+2*tsweep+2*tread+1e-9'
+.measure TRAN idvthl   find  i(xi1.d) at='3*tidle+tp+tsweep+0.5*tread'
+.measure TRAN idvthh   find  i(xi1.d) at='6*tidle+2*tp+2*tsweep+1.5*tread'
+.hdl "/home/grad/wangjianze/gf22fdx/fe22fdx/fecap_debug/veriloga/veriloga.va"
+.hdl "/home/grad/wangjianze/gf22fdx/fe22fdx/bsimimg/veriloga/veriloga.va"
+.end
