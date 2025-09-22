@@ -1,0 +1,306 @@
+// ============================================================================
+// * Statistical Multidomain Dynamics Model of Polycrystalline FE Capacitor   *
+// * By Wang Jianze on 28/07/2023                                             *
+// *                                                                          *
+// * Project Manager: Assistant Professor Fong Xuanyao Kelvin                 *
+// *                                                                          *
+// * Developer(s): Wang Jianze (Ph.D. Student, CNNL, ECE, NUS)                *
+// ============================================================================
+
+`include "disciplines.vams" 
+`include "constants.vams" 
+
+`define EPS0                8.85418e-12         // Vacuum Permittivity [F/m]
+
+module fecap(pos, neg, qfe, pfe);
+
+inout pos, neg, qfe, pfe;
+electrical pos, neg, qfe, pfe;
+
+// ============================================================================
+// * Parameters of FE layer
+// * Calibrated for 22FDX-FE
+// ============================================================================
+
+parameter real TFE          = 6e-009        from (0:inf);           // Thickness of ferroelectric layer
+parameter real LFE          = 20e-009       from (0:inf);           // Length of ferroelectric layer
+parameter real WFE          = 80e-009       from (0:inf);           // Width of ferroelectric layer
+parameter real ETA_MIN      = 0             from [0:inf);           // Mininum value of ETA
+parameter real ETA_MAX      = 2             from [0:inf);           // Maxinum value of ETA
+parameter real PR           = 8             from (0:inf);           // Remnant polarization [uC/cm^2]
+parameter real TAU0         = 3e-9          from (0:inf);           // Characteristic time for a large EFE [s]
+parameter real Ea           = 3.74e8        from (0:inf);           // Activation Field [V/m]
+parameter real ALPHA        = 4.11          from (0:inf);           // Fitting parameter
+parameter real BETA         = 2.07          from (0:inf);           // Fitting parameter
+parameter real V_OFFSET     = -0.08         from (-inf:inf);        // Offset voltage [V]
+parameter real EPSFER       = 24            from (0:inf);           // Dielectric permittivity of ferroelectric
+parameter real a            = 12.1          from (0:inf);           // Parameter for GB2
+parameter real b            = 0.99          from (0:inf);           // Parameter for GB2
+parameter real p            = 0.691         from (0:inf);           // Parameter for GB2
+parameter real q            = 0.633         from (0:inf);           // Parameter for GB2
+parameter real bstep        = 1e-9          from (0:inf);           // bound_step
+parameter real deta         = 0.43          from (0:2);             // delta eta
+parameter real Bet          = 2.081711      from (0:inf);           // approximation of Beta function
+// parameter real pAstart      = 0.001         from [0:1];             // start value of the amount of A_eta_plus
+parameter real ap00         = 0.0           from [0:1];             // start value of the amount of A_eta_plus
+parameter real ap04         = 0.0           from [0:1];             // start value of the amount of A_eta_plus
+parameter real ap08         = 0.45128       from [0:1];             // start value of the amount of A_eta_plus
+parameter real ap12         = 0.35378       from [0:1];             // start value of the amount of A_eta_plus
+parameter real ap16         = 0.00101188    from [0:1];             // start value of the amount of A_eta_plus
+parameter real ap20         = 0.001         from [0:1];             // start value of the amount of A_eta_plus
+
+// ============================================================================
+// * Parameters of calculation
+// ============================================================================
+
+real AT                     = LFE * WFE;                            // Total FE area
+// real eta;                                                           //
+// real deta                   = (ETA_MAX - ETA_MIN) / 80;             // eta step for integration
+real VFE;
+real EFE;
+real EFE_pre;
+real EFE_abs;
+// real TI;
+real A_PLUS;
+// real A_ETA;
+real A_eta_0000;
+real A_eta_0400;
+real A_eta_0800;
+real A_eta_1200;
+real A_eta_1600;
+real A_eta_2000;
+// real A_ETA_PLUS;
+real A_eta_0000_plus;
+real A_eta_0400_plus;
+real A_eta_0800_plus;
+real A_eta_1200_plus;
+real A_eta_1600_plus;
+real A_eta_2000_plus;
+// real A_ETA_PLUS_TI;
+real A_eta_0000_plus_ti;
+real A_eta_0400_plus_ti;
+real A_eta_0800_plus_ti;
+real A_eta_1200_plus_ti;
+real A_eta_1600_plus_ti;
+real A_eta_2000_plus_ti;
+
+real int_inver_tau_0000;
+real int_inver_tau_0400;
+real int_inver_tau_0800;
+real int_inver_tau_1200;
+real int_inver_tau_1600;
+real int_inver_tau_2000;
+
+// real Prob_ETA;
+// real tau;
+real Polar;
+real Esign;
+real t_pre;
+real t_now;
+
+//real ASSERT;
+
+// ============================================================================
+// * Functions for calculation
+// ============================================================================
+
+analog function real B;
+
+    input p, q;
+    real p, q;
+    real tstep = 1e-4;
+    real t;
+    begin
+        //for ( i = tstep; t < 1; t = t + tstep ) begin
+        //    B = B + pow( t, ( p - 1 ) ) * pow( ( 1 - t ), ( q - 1 ) ) * tstep;
+        //end
+    end
+
+endfunction
+
+analog function real GB2;           // Generalized Beta function of type 2
+
+    input eta;
+    real eta;
+    begin
+        GB2 = ( ( abs(a) / b ) * pow(( eta / b ), ( a * p - 1 )) ) / ( Bet * ( 1 + pow( pow( ( eta / b ), a ), ( p + q ) ) ) );
+    end
+    
+endfunction
+
+analog function real one_over_tau;  // compute 1/tau
+
+    input eta, Efeabs;
+    real eta, Efeabs;
+    begin
+        if ( Efeabs < ( abs(V_OFFSET) / TFE ) ) begin
+            one_over_tau = 0;
+        end
+        else begin
+            one_over_tau = 1 / TAU0 * exp( -1 * pow( ( eta * Ea / Efeabs ), ALPHA ) );
+        end
+    end
+    
+endfunction
+
+analog function real Prob_eta;      // compute probability for a particular eta
+
+    input eta;
+    real eta;
+    begin
+        Prob_eta = GB2(eta) * deta;
+    end
+    
+endfunction
+
+analog function real Epre_dir;
+
+    input Efe;
+    real Efe;
+    begin
+        if (abs(Efe) >= 1e-6) begin
+            if (Efe > 0) begin
+                Epre_dir = 1.0;
+            end
+            else begin
+                Epre_dir = -1.0;
+            end
+        end
+        else begin
+            Epre_dir = 1.0;
+        end
+    end
+
+endfunction
+
+analog begin
+
+    $bound_step(bstep);
+    VFE = V(pos, neg) + V_OFFSET;
+    EFE = VFE / TFE;
+    EFE_abs = abs(EFE);
+    A_PLUS = 0;
+    t_now = $abstime;
+    
+    @(initial_step) begin
+    
+        EFE_pre = Epre_dir(EFE);
+        
+        t_pre = 0;
+        
+        A_eta_0000 = AT * Prob_eta(0.000);
+        A_eta_0400 = AT * Prob_eta(0.400);
+        A_eta_0800 = AT * Prob_eta(0.800);
+        A_eta_1200 = AT * Prob_eta(1.200);
+        A_eta_1600 = AT * Prob_eta(1.600);
+        A_eta_2000 = AT * Prob_eta(2.000);
+        
+        A_eta_0000_plus = ap00 * A_eta_0000;
+        A_eta_0400_plus = ap04 * A_eta_0400;
+        A_eta_0800_plus = ap08 * A_eta_0800;
+        A_eta_1200_plus = ap12 * A_eta_1200;
+        A_eta_1600_plus = ap16 * A_eta_1600;
+        A_eta_2000_plus = ap20 * A_eta_2000;
+        
+        A_eta_0000_plus_ti = A_eta_0000_plus;
+        A_eta_0400_plus_ti = A_eta_0400_plus;
+        A_eta_0800_plus_ti = A_eta_0800_plus;
+        A_eta_1200_plus_ti = A_eta_1200_plus;
+        A_eta_1600_plus_ti = A_eta_1600_plus;
+        A_eta_2000_plus_ti = A_eta_2000_plus;
+        
+        int_inver_tau_0000 = 0.0;
+        int_inver_tau_0400 = 0.0;
+        int_inver_tau_0800 = 0.0;
+        int_inver_tau_1200 = 0.0;
+        int_inver_tau_1600 = 0.0;
+        int_inver_tau_2000 = 0.0;
+        
+    end
+    
+    Esign = EFE * EFE_pre;
+    
+    if (Esign < 0) begin
+    
+        A_eta_0000_plus_ti = A_eta_0000_plus;
+        A_eta_0400_plus_ti = A_eta_0400_plus;
+        A_eta_0800_plus_ti = A_eta_0800_plus;
+        A_eta_1200_plus_ti = A_eta_1200_plus;
+        A_eta_1600_plus_ti = A_eta_1600_plus;
+        A_eta_2000_plus_ti = A_eta_2000_plus;
+    
+        int_inver_tau_0000 = 0.0;
+        int_inver_tau_0400 = 0.0;
+        int_inver_tau_0800 = 0.0;
+        int_inver_tau_1200 = 0.0;
+        int_inver_tau_1600 = 0.0;
+        int_inver_tau_2000 = 0.0;
+        
+        if (EFE >= 0) begin
+            A_eta_0000_plus = A_eta_0000 - ( A_eta_0000 - A_eta_0000_plus_ti ) * exp( -1 * pow( int_inver_tau_0000, BETA ) );
+            A_eta_0400_plus = A_eta_0400 - ( A_eta_0400 - A_eta_0400_plus_ti ) * exp( -1 * pow( int_inver_tau_0400, BETA ) );
+            A_eta_0800_plus = A_eta_0800 - ( A_eta_0800 - A_eta_0800_plus_ti ) * exp( -1 * pow( int_inver_tau_0800, BETA ) );
+            A_eta_1200_plus = A_eta_1200 - ( A_eta_1200 - A_eta_1200_plus_ti ) * exp( -1 * pow( int_inver_tau_1200, BETA ) );
+            A_eta_1600_plus = A_eta_1600 - ( A_eta_1600 - A_eta_1600_plus_ti ) * exp( -1 * pow( int_inver_tau_1600, BETA ) );
+            A_eta_2000_plus = A_eta_2000 - ( A_eta_2000 - A_eta_2000_plus_ti ) * exp( -1 * pow( int_inver_tau_2000, BETA ) );
+            
+        end
+        else begin
+            A_eta_0000_plus = -1 * A_eta_0000 + ( A_eta_0000 + A_eta_0000_plus_ti ) * exp( -1 * pow( int_inver_tau_0000, BETA ) );
+            A_eta_0400_plus = -1 * A_eta_0400 + ( A_eta_0400 + A_eta_0400_plus_ti ) * exp( -1 * pow( int_inver_tau_0400, BETA ) );
+            A_eta_0800_plus = -1 * A_eta_0800 + ( A_eta_0800 + A_eta_0800_plus_ti ) * exp( -1 * pow( int_inver_tau_0800, BETA ) );
+            A_eta_1200_plus = -1 * A_eta_1200 + ( A_eta_1200 + A_eta_1200_plus_ti ) * exp( -1 * pow( int_inver_tau_1200, BETA ) );
+            A_eta_1600_plus = -1 * A_eta_1600 + ( A_eta_1600 + A_eta_1600_plus_ti ) * exp( -1 * pow( int_inver_tau_1600, BETA ) );
+            A_eta_2000_plus = -1 * A_eta_2000 + ( A_eta_2000 + A_eta_2000_plus_ti ) * exp( -1 * pow( int_inver_tau_2000, BETA ) );
+        end
+        
+    end
+    else begin
+    
+        int_inver_tau_0000 = int_inver_tau_0000 + one_over_tau(0.000, EFE_abs) * ( t_now - t_pre );
+        int_inver_tau_0400 = int_inver_tau_0400 + one_over_tau(0.400, EFE_abs) * ( t_now - t_pre );
+        int_inver_tau_0800 = int_inver_tau_0800 + one_over_tau(0.800, EFE_abs) * ( t_now - t_pre );
+        int_inver_tau_1200 = int_inver_tau_1200 + one_over_tau(1.200, EFE_abs) * ( t_now - t_pre );
+        int_inver_tau_1600 = int_inver_tau_1600 + one_over_tau(1.600, EFE_abs) * ( t_now - t_pre );
+        int_inver_tau_2000 = int_inver_tau_2000 + one_over_tau(2.000, EFE_abs) * ( t_now - t_pre );
+        
+        if (EFE >= 0) begin
+            A_eta_0000_plus = A_eta_0000 - ( A_eta_0000 - A_eta_0000_plus_ti ) * exp( -1 * pow( int_inver_tau_0000, BETA ) );
+            A_eta_0400_plus = A_eta_0400 - ( A_eta_0400 - A_eta_0400_plus_ti ) * exp( -1 * pow( int_inver_tau_0400, BETA ) );
+            A_eta_0800_plus = A_eta_0800 - ( A_eta_0800 - A_eta_0800_plus_ti ) * exp( -1 * pow( int_inver_tau_0800, BETA ) );
+            A_eta_1200_plus = A_eta_1200 - ( A_eta_1200 - A_eta_1200_plus_ti ) * exp( -1 * pow( int_inver_tau_1200, BETA ) );
+            A_eta_1600_plus = A_eta_1600 - ( A_eta_1600 - A_eta_1600_plus_ti ) * exp( -1 * pow( int_inver_tau_1600, BETA ) );
+            A_eta_2000_plus = A_eta_2000 - ( A_eta_2000 - A_eta_2000_plus_ti ) * exp( -1 * pow( int_inver_tau_2000, BETA ) );
+            
+        end
+        else begin
+            A_eta_0000_plus = -1 * A_eta_0000 + ( A_eta_0000 + A_eta_0000_plus_ti ) * exp( -1 * pow( int_inver_tau_0000, BETA ) );
+            A_eta_0400_plus = -1 * A_eta_0400 + ( A_eta_0400 + A_eta_0400_plus_ti ) * exp( -1 * pow( int_inver_tau_0400, BETA ) );
+            A_eta_0800_plus = -1 * A_eta_0800 + ( A_eta_0800 + A_eta_0800_plus_ti ) * exp( -1 * pow( int_inver_tau_0800, BETA ) );
+            A_eta_1200_plus = -1 * A_eta_1200 + ( A_eta_1200 + A_eta_1200_plus_ti ) * exp( -1 * pow( int_inver_tau_1200, BETA ) );
+            A_eta_1600_plus = -1 * A_eta_1600 + ( A_eta_1600 + A_eta_1600_plus_ti ) * exp( -1 * pow( int_inver_tau_1600, BETA ) );
+            A_eta_2000_plus = -1 * A_eta_2000 + ( A_eta_2000 + A_eta_2000_plus_ti ) * exp( -1 * pow( int_inver_tau_2000, BETA ) );
+        end
+    end
+    
+    A_PLUS = A_eta_0000_plus +
+             A_eta_0400_plus +
+             A_eta_0800_plus +
+             A_eta_1200_plus +
+             A_eta_1600_plus +
+             A_eta_2000_plus;
+	if (A_PLUS > AT) A_PLUS = AT;
+             
+    Polar = PR * ( 2 * A_PLUS / AT - 1 );
+    
+    EFE_pre = Epre_dir(EFE);
+    
+    t_pre = t_now;
+    
+    V(pfe) <+ Polar;
+    V(qfe) <+ Polar + EPSFER * `EPS0 * EFE * 1e2;
+    I(pos, neg) <+ 2*PR*ddt(A_PLUS)*1e-2 + ddt(V(qfe)*1e-2*WFE*LFE);
+    
+end
+
+endmodule
